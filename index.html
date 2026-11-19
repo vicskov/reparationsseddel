@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b5cad">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Reparationssedler</title>
+<style>
+:root{--paper:#fbfaf6;--ink:#1b1f24;--line:#b9c2cc;--muted:#5d6874;--accent:#0b5cad;--danger:#c0362c;--ok:#1e7a3c;--warn:#b26a00;--bg:#e9ecef}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
+button{font:inherit;cursor:pointer;touch-action:manipulation}
+.view{display:none;min-height:100vh;padding-bottom:calc(84px + env(safe-area-inset-bottom))}
+.view.show{display:block}
+.wrap{max-width:1000px;margin:0 auto;padding:8px}
+.topbar{position:sticky;top:0;z-index:5;background:var(--accent);color:#fff;padding:calc(8px + env(safe-area-inset-top)) 10px 8px;display:flex;align-items:center;gap:8px}
+.topbar h1{font-size:18px;margin:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topbar button{background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:8px;padding:8px 11px;font-size:15px}
+.sync{font-size:12px;background:rgba(255,255,255,.15);border-radius:20px;padding:4px 9px;white-space:nowrap}
+.sync.bad{background:#ffd8d4;color:#8a1f16}
+.banner{margin:8px 0;padding:9px 11px;border-radius:8px;font-size:14px;line-height:1.35}
+.banner.warn{background:#fff3d6;border:1px solid #e8c766}
+.banner.err{background:#ffe6e3;border:1px solid #f0a59c}
+.banner.info{background:#e6f0fb;border:1px solid #a9c7ea}
+.banner a,.banner button.link{color:var(--accent);font-weight:600;background:none;border:none;padding:0;text-decoration:underline}
+input[type=search],.f input,.dlg input{font:inherit;font-size:16px;padding:9px 10px;border:1.5px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);width:100%}
+input:focus{outline:none;border-color:var(--accent)}
+.tabs{display:flex;gap:6px;margin:8px 0;overflow-x:auto}
+.tabs button{flex:1 0 auto;border:1.5px solid var(--line);background:#fff;border-radius:20px;padding:8px 12px;font-size:14px;white-space:nowrap}
+.tabs button.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.list{list-style:none;padding:0;margin:0}
+.item{background:#fff;border-radius:10px;padding:10px 12px;margin:7px 0;display:flex;gap:10px;align-items:center;border-left:5px solid transparent;cursor:pointer}
+.item.wait{border-left-color:var(--danger)}
+.item.old{border-left-color:var(--warn)}
+.item .main{flex:1;min-width:0}
+.item .t1{font-weight:700;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .t2,.item .t3{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.badge{display:inline-block;font-size:11px;font-weight:700;border-radius:10px;padding:2px 7px;margin-left:4px;vertical-align:middle}
+.b-wait{background:#ffe1dd;color:#8a1f16}.b-old{background:#fff0cc;color:#7a4a00}.b-sync{background:#e3e7eb;color:#4a5560}
+.item .qbtn{border:1.5px solid var(--ok);color:var(--ok);background:#fff;border-radius:8px;padding:8px 10px;font-size:13px;font-weight:600;white-space:nowrap}
+.empty{text-align:center;color:var(--muted);padding:30px 10px}
+.fab{position:fixed;right:16px;bottom:calc(18px + env(safe-area-inset-bottom));background:var(--accent);color:#fff;border:none;border-radius:28px;padding:15px 20px;font-size:16px;font-weight:700;box-shadow:0 6px 18px rgba(0,0,0,.25);z-index:6}
+/* editor */
+.fields{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:grid;grid-template-columns:repeat(6,1fr);gap:8px 12px}
+.f{display:flex;flex-direction:column;gap:3px;min-width:0;grid-column:span 2}
+.f.w3{grid-column:span 2}.f.w6{grid-column:span 6}
+.f label{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.f label .req{color:var(--danger)}
+.f.missing input{border-color:var(--danger);background:#fff3f2}
+.f.chk{grid-column:span 6;flex-direction:row;align-items:center}
+.f label.tg{display:flex;align-items:center;gap:8px;font-size:16px;color:var(--ink);text-transform:none;letter-spacing:0;cursor:pointer}
+.tg input{width:22px;height:22px;accent-color:var(--danger)}
+.hist{grid-column:span 6}
+.hist .banner{margin:0}
+.hist button.link{display:block;margin-top:3px;text-align:left}
+.ro .f input,.ro .row input{background:#f2f4f6;color:#333}
+.pentools{display:none;gap:6px;margin:8px 0 0;align-items:center;flex-wrap:wrap}
+.pen-device .pentools{display:flex}
+.pentools button{border:1.5px solid var(--line);background:#fff;border-radius:8px;padding:7px 11px;font-size:14px}
+.pentools button.on{border-color:var(--accent);background:#e6f0fb;color:var(--accent);font-weight:600}
+.pentools span{font-size:12px;color:var(--muted)}
+.table{position:relative;margin-top:8px;background:var(--paper);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.thead,.row{display:grid;grid-template-columns:43% 33% 24%}
+.thead{background:#eef2f6;font-size:12px;font-weight:700;color:#4a5560;text-transform:uppercase;letter-spacing:.03em}
+.thead div{padding:8px 10px}
+.thead div+div,.row>*+*{border-left:1.5px solid #c9d0d7}
+.row{border-top:1px solid #d6dce2}
+.row input{border:none;background:transparent;font:inherit;font-size:16px;padding:0 8px;width:100%;min-width:0;color:var(--ink)}
+.row input:focus{outline:2px solid var(--accent);outline-offset:-2px;background:#fff}
+.q{display:flex;align-items:center;justify-content:center;gap:3px;padding:0 3px}
+.q button{flex:0 0 auto;border:1.5px solid var(--line);background:#fff;border-radius:7px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0;color:var(--ink)}
+.q input{text-align:center;padding:0;font-weight:600}
+.rows{position:relative}
+.pen-device .rows{touch-action:none}
+canvas#ink{position:absolute;left:0;top:0;pointer-events:none}
+.actions{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);padding:10px 10px calc(10px + env(safe-area-inset-bottom));display:flex;gap:8px;z-index:6;justify-content:flex-end;align-items:center}
+.actions .info{flex:1;font-size:12px;color:var(--muted);min-width:0}
+.actions button{border:1.5px solid var(--line);background:#fff;border-radius:9px;padding:11px 14px;font-size:15px}
+.actions button.primary{background:var(--ok);border-color:var(--ok);color:#fff;font-weight:700}
+.actions button.blue{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+.chip{display:inline-block;font-size:12px;font-weight:700;border-radius:12px;padding:3px 9px;background:rgba(255,255,255,.2)}
+/* settings / login */
+.card{background:#fff;border-radius:10px;padding:14px;margin:10px 0}
+.card h2{font-size:16px;margin:0 0 8px}
+.card p{margin:6px 0;font-size:14px;line-height:1.4;color:#333}
+.card .f{margin:8px 0}
+.btn{border:1.5px solid var(--line);background:#fff;border-radius:9px;padding:10px 14px;font-size:15px;margin:4px 6px 4px 0}
+.btn.blue{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.btn.red{border-color:var(--danger);color:var(--danger)}
+small.mono{font-family:ui-monospace,monospace;font-size:12px;color:var(--muted);word-break:break-all}
+/* dialog */
+.modal{position:fixed;inset:0;background:rgba(20,25,30,.45);display:none;align-items:center;justify-content:center;z-index:20;padding:16px}
+.modal.show{display:flex}
+.dlg{background:#fff;border-radius:12px;padding:18px;max-width:440px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.25)}
+.dlg p{margin:0 0 12px;font-size:16px;line-height:1.4;white-space:pre-line}
+.dlg .in{margin-bottom:12px}
+.dlg .btns{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.dlg button{border:1.5px solid var(--line);background:#fff;border-radius:8px;padding:10px 16px;font-size:15px}
+.dlg button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(90px + env(safe-area-inset-bottom));background:#1b1f24;color:#fff;padding:10px 16px;border-radius:20px;font-size:14px;z-index:30;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw;text-align:center}
+.toast.show{opacity:1}
+@media (max-width:700px){
+  .fields{gap:6px 8px;padding:8px}
+  .f{grid-column:span 3}.f.w3{grid-column:span 2}.f.kunde{grid-column:span 6}
+  .f label{font-size:10px}
+  .f input{padding:7px 8px}
+  .f input[type=date]{font-size:14px;padding:6px 4px}
+  .row input{font-size:15px;padding:0 5px}
+  .thead div{padding:6px 6px;font-size:10px}
+  .actions button{padding:10px 11px;font-size:14px}
+}
+</style>
+</head>
+<body>
+
+<!-- ============ LISTE ============ -->
+<section class="view" id="vList">
+  <div class="topbar">
+    <h1>Reparationssedler</h1>
+    <span class="sync" id="syncChip">…</span>
+    <button id="bSettings" aria-label="Indstillinger">⚙</button>
+  </div>
+  <div class="wrap">
+    <div id="listBanners"></div>
+    <input type="search" id="q" placeholder="Søg nr., kunde, model, serienr., sagsnr…" autocomplete="off">
+    <div class="tabs" id="tabs">
+      <button data-t="aaben" class="on">Åbne <b id="cA">0</b></button>
+      <button data-t="faerdig">Færdige – ikke tastet <b id="cF">0</b></button>
+      <button data-t="tastet">Arkiv <b id="cT">0</b></button>
+    </div>
+    <ul class="list" id="list"></ul>
+  </div>
+  <button class="fab" id="bNew">＋ Ny seddel</button>
+</section>
+
+<!-- ============ EDITOR ============ -->
+<section class="view" id="vEdit">
+  <div class="topbar">
+    <button id="bBack" aria-label="Tilbage">←</button>
+    <h1 id="eTitle">Ny seddel</h1>
+    <span class="chip" id="eStatus">Åben</span>
+    <button id="bMenu" aria-label="Mere">⋯</button>
+  </div>
+  <div class="wrap" id="eWrap">
+    <div id="eBanners"></div>
+    <div class="fields" id="fieldsBox">
+      <div class="f kunde w6"><label>Kunde <span class="req">*</span></label><input id="kunde" autocomplete="off"></div>
+      <div class="f"><label>Model <span class="req">*</span></label><input id="model" autocomplete="off"></div>
+      <div class="f"><label>Serienr. <span class="req">*</span></label><input id="serienr" autocomplete="off" autocapitalize="characters"></div>
+      <div class="f w3"><label>Sagsnr.</label><input id="sagsnr" autocomplete="off" inputmode="numeric"></div>
+      <div class="f w3"><label>Dato <span class="req">*</span></label><input id="dato" type="date"></div>
+      <div class="f w3"><label>Tid (timer) <span class="req">*</span></label><input id="tid" autocomplete="off" inputmode="decimal" placeholder="fx 3"></div>
+      <div class="hist" id="hist"></div>
+      <div class="f chk"><label class="tg"><input type="checkbox" id="afventer"> Afventer dele</label></div>
+    </div>
+    <div class="pentools" id="penTools">
+      <button id="tPen" class="on">✎ Pen</button>
+      <button id="tErase">⌫ Visk</button>
+      <button id="tUndo">↶ Fortryd streg</button>
+      <span>Skriv med pennen i felterne – fingeren bruges til at taste.</span>
+    </div>
+    <div class="table" id="table">
+      <div class="thead"><div>Fejl / udført arbejde</div><div>Materialer</div><div style="text-align:center">Antal</div></div>
+      <div class="rows" id="rows"><canvas id="ink"></canvas></div>
+    </div>
+  </div>
+  <div class="actions" id="eActions"></div>
+</section>
+
+<!-- ============ INDSTILLINGER ============ -->
+<section class="view" id="vSettings">
+  <div class="topbar"><button id="bSetBack">←</button><h1>Indstillinger</h1></div>
+  <div class="wrap">
+    <div class="card">
+      <h2>Dig</h2>
+      <div class="f"><label>Navn eller initialer (vises på sedlerne)</label><input id="sName" autocomplete="off"></div>
+    </div>
+    <div class="card" id="dbxCard"></div>
+    <div class="card">
+      <h2>Synkronisering</h2>
+      <p id="sSyncInfo"></p>
+      <button class="btn" id="bSyncNow">⟳ Synkronisér nu</button>
+    </div>
+    <div class="card">
+      <h2>Udtræk og papir</h2>
+      <p>Oversigt over alle sedler til Excel (backup / kontrol mod Ordrestyring).</p>
+      <button class="btn" id="bCsv">⤓ Hent oversigt (CSV)</button>
+      <p>Tom seddel til print, hvis tablet/telefon ikke er ved hånden.</p>
+      <button class="btn" id="bBlank">⤓ Tom seddel (PDF)</button>
+    </div>
+    <div class="card">
+      <h2>Avanceret</h2>
+      <div class="f"><label>Dropbox App key</label><input id="sKey" autocomplete="off"></div>
+      <div class="f"><label>Mappe i Dropbox</label><input id="sBase" autocomplete="off"></div>
+      <button class="btn" id="bSaveAdv">Gem</button>
+      <p><small class="mono" id="sVer"></small></p>
+    </div>
+  </div>
+</section>
+
+<div class="modal" id="modal"><div class="dlg"><p id="mText"></p><div class="in" id="mIn"></div><div class="btns" id="mBtns"></div></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+/* =====================================================================
+   KONFIGURATION – udfyldes ved opsætning
+   ===================================================================== */
+const APP_VERSION = '1.0.0';
+const DEFAULT_APP_KEY = 'cdlkzvwoo0vkdpl';                       // Dropbox App key
+const DEFAULT_BASE = '/Victor/DanskDJTeknik/Reparationssedler';        // mappe i Dropbox
+const OLD_DAYS = 14;                              // advarsel når en åben seddel er ældre end dette
+
+/* ===================================================================== */
+const ROWS = 12, LW = 1000, ROW_H = 70, PEN_W = 760;   // logisk geometri (pen + PDF)
+const COLX = [0, 430, 760, 1000];
+const $ = id => document.getElementById(id);
+const fieldIds = ['kunde','model','serienr','sagsnr','dato','tid'];
+
+/* ---------- små hjælpere ---------- */
+const LS = {
+  get(k, d=null){ try { const v = localStorage.getItem('rs.'+k); return v === null ? d : JSON.parse(v); } catch(_) { return d; } },
+  set(k, v){ try { localStorage.setItem('rs.'+k, JSON.stringify(v)); } catch(_){} },
+  del(k){ try { localStorage.removeItem('rs.'+k); } catch(_){} }
+};
+const today = () => { const d = new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
+const nowIso = () => new Date().toISOString();
+const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : 'id' + Date.now().toString(36) + Math.random().toString(36).slice(2));
+const fmtNr = n => n ? 'R-' + String(n).padStart(4,'0') : 'Ny (ikke synk.)';
+const dk = iso => { if (!iso) return ''; const d = new Date(iso); return d.toLocaleDateString('da-DK',{day:'2-digit',month:'2-digit',year:'numeric'}); };
+const dkt = iso => { if (!iso) return ''; const d = new Date(iso); return d.toLocaleString('da-DK',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}); };
+const dmy = ymd => { if (!ymd) return ''; const [y,m,d] = ymd.split('-'); return `${d}-${m}-${y}`; };
+const daysSince = iso => Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+const normSN = s => (s||'').toUpperCase().replace(/[\s\-_.\/]/g,'');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const clean = s => (s||'').trim().replace(/[\\/:*?"<>|#%]+/g,'').replace(/\s+/g,'-').slice(0,40);
+const parseNum = s => { const n = parseFloat(String(s||'').replace(',','.')); return isNaN(n) ? 0 : n; };
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+function toast(msg, ms=2500){ const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), ms); }
+function dialog(text, buttons, input){
+  return new Promise(res => {
+    $('mText').textContent = text;
+    const inBox = $('mIn'); inBox.innerHTML = '';
+    let inp = null;
+    if (input){ inp = document.createElement('input'); inp.value = input.value || ''; inp.placeholder = input.placeholder || ''; if (input.mode) inp.inputMode = input.mode; inBox.appendChild(inp); }
+    const b = $('mBtns'); b.innerHTML = '';
+    buttons.forEach(([label, val, primary]) => {
+      const el = document.createElement('button'); el.textContent = label; if (primary) el.className = 'primary';
+      el.onclick = () => { $('modal').classList.remove('show'); res(input ? { v: val, text: inp.value } : val); };
+      b.appendChild(el);
+    });
+    $('modal').classList.add('show');
+    if (inp) setTimeout(() => inp.focus(), 50);
+  });
+}
+function download(blob, name){
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+}
+
+/* =====================================================================
+   LOKAL DATABASE (IndexedDB)  – record: {id, note, rev, dirty, ver}
+   ===================================================================== */
+const DB = {
+  db: null,
+  open(){
+    return new Promise((res, rej) => {
+      const r = indexedDB.open('reparationssedler', 1);
+      r.onupgradeneeded = () => { const d = r.result; if (!d.objectStoreNames.contains('notes')) d.createObjectStore('notes', { keyPath:'id' }); };
+      r.onsuccess = () => { this.db = r.result; res(); };
+      r.onerror = () => rej(r.error);
+    });
+  },
+  tx(mode, fn){
+    return new Promise((res, rej) => {
+      const t = this.db.transaction('notes', mode), s = t.objectStore('notes');
+      let out; const r = fn(s); if (r) r.onsuccess = () => { out = r.result; };
+      t.oncomplete = () => res(out); t.onerror = () => rej(t.error); t.onabort = () => rej(t.error);
+    });
+  },
+  all(){ return this.tx('readonly', s => s.getAll()); },
+  get(id){ return this.tx('readonly', s => s.get(id)); },
+  put(rec){ return this.tx('readwrite', s => s.put(rec)); },
+  del(id){ return this.tx('readwrite', s => s.delete(id)); }
+};
+let cache = new Map();   // id -> record (spejl af IDB)
+async function loadCache(){ cache = new Map((await DB.all()).map(r => [r.id, r])); }
+async function putRec(rec){ cache.set(rec.id, rec); await DB.put(rec); }
+
+/* =====================================================================
+   DROPBOX
+   ===================================================================== */
+const cfg = {
+  get appKey(){ return LS.get('appKey') || DEFAULT_APP_KEY; },
+  get base(){ return (LS.get('base') || DEFAULT_BASE).replace(/\/+$/,''); },
+  get name(){ return LS.get('name', ''); }
+};
+const P = {
+  data:   () => cfg.base + '/_data',
+  note:   id => `${cfg.base}/_data/${id}.json`,
+  counter:() => cfg.base + '/_system/counter.json',
+  conflict:(id) => `${cfg.base}/_system/konflikter/${id}_${Date.now()}.json`,
+  faerdig:name => `${cfg.base}/Færdige - ikke tastet/${name}`,
+  arkiv:  (name, y) => `${cfg.base}/Arkiv/${y}/${name}`
+};
+const headerJson = o => JSON.stringify(o).replace(/[\u007f-￿]/g, c => '\\u' + ('000' + c.charCodeAt(0).toString(16)).slice(-4));
+
+class DbxError extends Error { constructor(status, summary, body){ super(summary || ('HTTP ' + status)); this.status = status; this.summary = summary || ''; this.body = body; } }
+
+const Dbx = {
+  _tok: null, _exp: 0,
+  get linked(){ return !!LS.get('refresh'); },
+  redirectUri(){ return location.origin + location.pathname; },
+  async pkce(){
+    const arr = new Uint8Array(48); crypto.getRandomValues(arr);
+    const verifier = btoa(String.fromCharCode(...arr)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+    const dig = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
+    const challenge = btoa(String.fromCharCode(...new Uint8Array(dig))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+    return { verifier, challenge };
+  },
+  async authUrl(withRedirect){
+    const { verifier, challenge } = await this.pkce();
+    LS.set('pkce', verifier);
+    const p = new URLSearchParams({ client_id: cfg.appKey, response_type:'code', token_access_type:'offline',
+      code_challenge: challenge, code_challenge_method:'S256' });
+    if (withRedirect) p.set('redirect_uri', this.redirectUri());
+    return 'https://www.dropbox.com/oauth2/authorize?' + p.toString();
+  },
+  async exchange(code, withRedirect){
+    const body = new URLSearchParams({ code: code.trim(), grant_type:'authorization_code', code_verifier: LS.get('pkce'), client_id: cfg.appKey });
+    if (withRedirect) body.set('redirect_uri', this.redirectUri());
+    const r = await fetch('https://api.dropboxapi.com/oauth2/token', { method:'POST', body });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || !j.refresh_token) throw new Error(j.error_description || j.error || ('HTTP ' + r.status));
+    LS.set('refresh', j.refresh_token); LS.del('pkce'); LS.del('cursor');
+    this._tok = j.access_token; this._exp = Date.now() + (j.expires_in||14400)*1000;
+    // konto + evt. team-rod
+    const acc = await this.rpc('users/get_current_account', null);
+    LS.set('account', { name: acc.name && acc.name.display_name, email: acc.email });
+    const ri = acc.root_info || {};
+    if (ri.root_namespace_id && ri.root_namespace_id !== ri.home_namespace_id) LS.set('rootNs', ri.root_namespace_id); else LS.del('rootNs');
+  },
+  logout(){ ['refresh','account','rootNs','cursor'].forEach(k => LS.del(k)); this._tok = null; },
+  async token(){
+    if (this._tok && Date.now() < this._exp - 60000) return this._tok;
+    const body = new URLSearchParams({ grant_type:'refresh_token', refresh_token: LS.get('refresh'), client_id: cfg.appKey });
+    const r = await fetch('https://api.dropboxapi.com/oauth2/token', { method:'POST', body });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) { if (r.status === 400 || r.status === 401) throw new DbxError(401, 'login_udløbet'); throw new DbxError(r.status, j.error); }
+    this._tok = j.access_token; this._exp = Date.now() + (j.expires_in||14400)*1000;
+    return this._tok;
+  },
+  async hdr(extra){
+    const h = Object.assign({ Authorization: 'Bearer ' + await this.token() }, extra || {});
+    const ns = LS.get('rootNs'); if (ns) h['Dropbox-API-Path-Root'] = headerJson({ '.tag':'root', root: ns });
+    return h;
+  },
+  async fail(r){
+    let j = null; const t = await r.text().catch(() => '');
+    try { j = JSON.parse(t); } catch(_){}
+    throw new DbxError(r.status, (j && j.error_summary) || t.slice(0,200), j);
+  },
+  async rpc(ep, arg){
+    const r = await fetch('https://api.dropboxapi.com/2/' + ep, { method:'POST',
+      headers: await this.hdr(arg === null ? {} : { 'Content-Type':'application/json' }), body: arg === null ? null : JSON.stringify(arg) });
+    if (!r.ok) await this.fail(r);
+    const t = await r.text(); return t ? JSON.parse(t) : null;
+  },
+  async upload(path, data, mode){
+    const r = await fetch('https://content.dropboxapi.com/2/files/upload', { method:'POST',
+      headers: await this.hdr({ 'Content-Type':'application/octet-stream', 'Dropbox-API-Arg': headerJson({ path, mode, autorename:false, mute:true }) }),
+      body: data });
+    if (!r.ok) await this.fail(r);
+    return r.json();
+  },
+  async download(path){
+    const r = await fetch('https://content.dropboxapi.com/2/files/download', { method:'POST',
+      headers: await this.hdr({ 'Dropbox-API-Arg': headerJson({ path }) }) });
+    if (!r.ok) await this.fail(r);
+    return r.text();
+  }
+};
+const isNotFound = e => e instanceof DbxError && /not_found/.test(e.summary);
+const isConflict = e => e instanceof DbxError && e.status === 409 && /conflict/.test(e.summary);
+
+/* =====================================================================
+   SEDLER – model
+   ===================================================================== */
+function newNote(){
+  return { v:1, id: uuid(), nr: null, status:'aaben', afventer:false,
+    created: nowIso(), createdBy: cfg.name, updated: nowIso(), updatedBy: cfg.name, contentRev: 1,
+    fields: { kunde:'', model:'', serienr:'', sagsnr:'', dato: today(), tid:'' },
+    rows: Array.from({length: ROWS}, () => ({ fejl:'', mat:'', antal:'' })),
+    strokes: [], log: [{ t: nowIso(), by: cfg.name, a: 'oprettet' }],
+    pdfPath: null, pdfStamp: null };
+}
+function isEmptyNote(n){
+  const f = n.fields;
+  return !f.kunde && !f.model && !f.serienr && !f.sagsnr && !f.tid && !n.strokes.length && n.rows.every(r => !r.fejl && !r.mat && !r.antal);
+}
+function pdfName(n){
+  const f = n.fields;
+  return [fmtNr(n.nr), f.dato, clean(f.kunde), clean(f.model), 'SN' + clean(f.serienr)].filter(Boolean).join('_') + '.pdf';
+}
+function desiredPdfPath(n){
+  if (!n.nr) return null;
+  if (n.status === 'faerdig') return P.faerdig(pdfName(n));
+  if (n.status === 'tastet') return P.arkiv(pdfName(n), (n.fields.dato || today()).slice(0,4));
+  return null;
+}
+
+/* =====================================================================
+   PDF (genereres altid ud fra sedlens data)
+   ===================================================================== */
+function fitText(g, text, maxW, size, minSize, weight){
+  let s = size; g.font = `${weight||400} ${s}px system-ui, sans-serif`;
+  while (g.measureText(text).width > maxW && s > minSize){ s -= 1; g.font = `${weight||400} ${s}px system-ui, sans-serif`; }
+  let t = text; if (g.measureText(t).width > maxW){ while (t.length > 1 && g.measureText(t + '…').width > maxW) t = t.slice(0,-1); t += '…'; }
+  return t;
+}
+function drawStroke(g, s){
+  const p = s.p; g.strokeStyle = s.c || '#1b1f24'; g.fillStyle = s.c || '#1b1f24'; g.lineCap = 'round'; g.lineJoin = 'round';
+  if (p.length === 1){ g.beginPath(); g.arc(p[0][0], p[0][1], (s.w||3)*(0.5+p[0][2])/2, 0, Math.PI*2); g.fill(); return; }
+  for (let i=1;i<p.length;i++){ g.lineWidth = (s.w||3) * (0.45 + (p[i][2]+p[i-1][2])/2); g.beginPath(); g.moveTo(p[i-1][0], p[i-1][1]); g.lineTo(p[i][0], p[i][1]); g.stroke(); }
+}
+function renderPage(n){
+  const W = 1240, H = 1754, M = 60, blank = !n;
+  n = n || newNote();
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const g = c.getContext('2d');
+  g.fillStyle = '#fff'; g.fillRect(0,0,W,H);
+  g.fillStyle = '#1b1f24'; g.font = '700 40px system-ui, sans-serif'; g.textBaseline = 'alphabetic';
+  g.fillText('Reparationsseddel', M, M+38);
+  g.textAlign = 'right';
+  if (blank){ g.font = '400 24px system-ui, sans-serif'; g.fillStyle = '#5d6874'; g.fillText('Nr. ____________', W-M, M+36); }
+  else { g.font = '700 40px system-ui, sans-serif'; g.fillText(fmtNr(n.nr), W-M, M+38); }
+  g.textAlign = 'left';
+  g.font = '400 20px system-ui, sans-serif'; g.fillStyle = '#5d6874';
+  if (!blank){
+    let line = `Oprettet ${dkt(n.created)}${n.createdBy ? ' af ' + n.createdBy : ''}`;
+    if (n.faerdigAt) line += `   ·   Færdigmeldt ${dkt(n.faerdigAt)}${n.faerdigBy ? ' af ' + n.faerdigBy : ''}`;
+    g.fillText(line, M, M+76);
+  } else g.fillText('Udfyld ALLE felter med *. Tastes ind i appen bagefter.', M, M+76);
+  if (n.afventer && !blank){ g.save(); g.fillStyle = '#c0362c'; g.font = '700 26px system-ui, sans-serif'; g.fillText('AFVENTER DELE', M + 400, M+36); g.restore(); }
+
+  const bx = M, by = M+100, bw = W-2*M, bh = 200, cw = bw/3, ch = bh/2;
+  g.strokeStyle = '#8b97a3'; g.lineWidth = 2; g.strokeRect(bx, by, bw, bh);
+  g.lineWidth = 1.2; g.strokeStyle = '#b9c2cc'; g.beginPath();
+  g.moveTo(bx, by+ch); g.lineTo(bx+bw, by+ch); g.moveTo(bx+cw, by); g.lineTo(bx+cw, by+bh); g.moveTo(bx+2*cw, by); g.lineTo(bx+2*cw, by+bh); g.stroke();
+  const cells = [['Kunde *','kunde'],['Model *','model'],['Serienr. *','serienr'],['Sagsnr.','sagsnr'],['Dato *','dato'],['Tid (timer) *','tid']];
+  cells.forEach(([label,id],i) => {
+    const x = bx + (i%3)*cw + 16, y = by + Math.floor(i/3)*ch;
+    g.fillStyle = '#5d6874'; g.font = '600 18px system-ui, sans-serif'; g.fillText(label.toUpperCase(), x, y+30);
+    if (blank) return;
+    let v = (n.fields[id] || '').trim(); if (id === 'dato') v = dmy(v);
+    g.fillStyle = '#1b1f24'; const t = fitText(g, v || '–', cw-32, 30, 18, 500); g.fillText(t, x, y+76);
+  });
+
+  const ty = by + bh + 30, availW = W-2*M, availH = H - ty - M;
+  const headH = 56, LH = headH + ROWS*ROW_H;
+  const s = Math.min(availW/LW, availH/LH), tx = M + (availW - LW*s)/2;
+  g.save(); g.translate(tx, ty); g.scale(s, s);
+  g.fillStyle = '#eef2f6'; g.fillRect(0,0,LW,headH);
+  g.strokeStyle = '#b9c2cc'; g.lineWidth = 1.2;
+  for (let i=0;i<=ROWS;i++){ const y = headH + i*ROW_H; g.beginPath(); g.moveTo(0,y); g.lineTo(LW,y); g.stroke(); }
+  g.strokeStyle = '#8b97a3'; g.lineWidth = 2;
+  [COLX[1], COLX[2]].forEach(x => { g.beginPath(); g.moveTo(x,0); g.lineTo(x,LH); g.stroke(); });
+  g.fillStyle = '#4a5560'; g.font = '600 24px system-ui, sans-serif'; g.textBaseline = 'middle';
+  ['Fejl / udført arbejde','Materialer','Antal'].forEach((t,i) => g.fillText(t, COLX[i]+14, headH/2));
+  if (!blank){
+    g.fillStyle = '#1b1f24';
+    n.rows.forEach((r,i) => {
+      const yc = headH + (i+0.5)*ROW_H;
+      if (r.fejl) g.fillText(fitText(g, r.fejl, COLX[1]-COLX[0]-24, 28, 16, 400), COLX[0]+12, yc);
+      if (r.mat) g.fillText(fitText(g, r.mat, COLX[2]-COLX[1]-24, 28, 16, 400), COLX[1]+12, yc);
+      if (r.antal){ g.textAlign = 'center'; g.font = '600 32px system-ui, sans-serif'; g.fillText(r.antal, (COLX[2]+COLX[3])/2, yc); g.textAlign = 'left'; }
+    });
+    g.save(); g.translate(0, headH); n.strokes.forEach(st => drawStroke(g, st)); g.restore();
+  }
+  g.strokeStyle = '#8b97a3'; g.lineWidth = 2; g.strokeRect(0,0,LW,LH);
+  g.restore();
+  return c;
+}
+function buildPdf(jpeg, imgW, imgH){
+  const enc = new TextEncoder(), parts = [], offsets = []; let len = 0;
+  const push = b => { const u = typeof b === 'string' ? enc.encode(b) : b; parts.push(u); len += u.length; };
+  const PW = 595.28, PH = 841.89, content = `q ${PW} 0 0 ${PH} 0 0 cm /Im0 Do Q`;
+  push('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n');
+  const obj = (k, body) => { offsets[k] = len; push(`${k} 0 obj\n`); body(); push('\nendobj\n'); };
+  obj(1, () => push('<< /Type /Catalog /Pages 2 0 R >>'));
+  obj(2, () => push('<< /Type /Pages /Kids [3 0 R] /Count 1 >>'));
+  obj(3, () => push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${PW} ${PH}] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>`));
+  obj(4, () => { push(`<< /Type /XObject /Subtype /Image /Width ${imgW} /Height ${imgH} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpeg.length} >>\nstream\n`); push(jpeg); push('\nendstream'); });
+  obj(5, () => push(`<< /Length ${content.length} >>\nstream\n${content}\nendstream`));
+  const xref = len; let x = 'xref\n0 6\n0000000000 65535 f \n';
+  for (let i=1;i<=5;i++) x += String(offsets[i]).padStart(10,'0') + ' 00000 n \n';
+  push(x + `trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`);
+  const out = new Uint8Array(len); let o = 0; parts.forEach(p => { out.set(p, o); o += p.length; }); return out;
+}
+async function makePdf(n){
+  const c = renderPage(n);
+  const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.88));
+  return buildPdf(new Uint8Array(await blob.arrayBuffer()), c.width, c.height);
+}
+
+/* =====================================================================
+   SYNKRONISERING
+   ===================================================================== */
+const Sync = {
+  busy: false, again: false, lastOk: null, lastErr: null, timer: null,
+  pendingCount(){ let n = 0; cache.forEach(r => { if (r.dirty && !(r.note.nr == null && isEmptyNote(r.note))) n++; }); return n; },
+  soon(ms=1500){ clearTimeout(this.timer); this.timer = setTimeout(() => this.run(), ms); },
+  async run(){
+    if (!Dbx.linked || !cfg.appKey) { renderSyncChip(); return; }
+    if (this.busy){ this.again = true; return; }
+    this.busy = true; renderSyncChip();
+    try {
+      await this.push();
+      await this.pull();
+      this.lastOk = Date.now(); this.lastErr = null;
+    } catch (e) {
+      this.lastErr = e; console.warn('sync', e);
+      if (e instanceof DbxError && e.status === 401) { Dbx.logout(); toast('Dropbox-login er udløbet – log ind igen', 4000); }
+    } finally {
+      this.busy = false; renderSyncChip(); refreshViews();
+      if (this.again){ this.again = false; this.soon(500); }
+    }
+  },
+  async nextNr(){
+    for (let attempt = 0; attempt < 8; attempt++){
+      let meta = null, cur = { next: 1 };
+      try { meta = await Dbx.rpc('files/get_metadata', { path: P.counter() }); cur = JSON.parse(await Dbx.download(P.counter())); }
+      catch (e) { if (!isNotFound(e)) throw e; }
+      const nr = cur.next || 1;
+      try {
+        await Dbx.upload(P.counter(), JSON.stringify({ next: nr + 1, updated: nowIso() }),
+          meta ? { '.tag':'update', update: meta.rev } : { '.tag':'add' });
+        return nr;
+      } catch (e) { if (!isConflict(e)) throw e; await sleep(300 + Math.random()*700); }
+    }
+    throw new Error('Kunne ikke tildele løbenummer');
+  },
+  async push(){
+    const dirty = [...cache.values()].filter(r => r.dirty);
+    for (const rec0 of dirty){
+      let rec = cache.get(rec0.id); if (!rec || !rec.dirty) continue;
+      const ver = rec.ver;
+      let n = JSON.parse(JSON.stringify(rec.note));
+      if (!n.nr){
+        if (isEmptyNote(n)) continue;              // tomme kladder synkroniseres ikke
+        n.nr = await this.nextNr();
+        await this.patchNote(n.id, { nr: n.nr });
+      }
+      // PDF-håndtering ud fra status
+      const want = desiredPdfPath(n), stamp = n.contentRev + ':' + n.status + ':' + n.nr;
+      if (!want && n.pdfPath){
+        try { await Dbx.rpc('files/delete_v2', { path: n.pdfPath }); } catch (e) { if (!isNotFound(e)) throw e; }
+        n.pdfPath = null; n.pdfStamp = null;
+      } else if (want && (n.pdfPath !== want || n.pdfStamp !== stamp)){
+        const sameContent = n.pdfStamp && n.pdfStamp.split(':')[0] === String(n.contentRev);
+        let moved = false;
+        if (n.pdfPath && n.pdfPath !== want && sameContent){
+          try { await Dbx.rpc('files/move_v2', { from_path: n.pdfPath, to_path: want, autorename: false }); moved = true; }
+          catch (e) { if (!isNotFound(e) && !isConflict(e)) throw e; }
+        }
+        if (!moved){
+          await Dbx.upload(want, await makePdf(n), { '.tag':'overwrite' });
+          if (n.pdfPath && n.pdfPath !== want){ try { await Dbx.rpc('files/delete_v2', { path: n.pdfPath }); } catch (e) { if (!isNotFound(e)) throw e; } }
+        }
+        n.pdfPath = want; n.pdfStamp = stamp;
+      }
+      await this.patchNote(n.id, { pdfPath: n.pdfPath, pdfStamp: n.pdfStamp });
+      rec = cache.get(n.id);
+      const body = JSON.stringify(rec.note);
+      let meta;
+      try {
+        meta = await Dbx.upload(P.note(n.id), body, rec.rev ? { '.tag':'update', update: rec.rev } : { '.tag':'add' });
+      } catch (e) {
+        if (!isConflict(e)) throw e;
+        // Ændret et andet sted: gem serverens udgave som sikkerhedskopi og flet de to udgaver
+        let other = null;
+        try { const txt = await Dbx.download(P.note(n.id)); other = JSON.parse(txt); await Dbx.upload(P.conflict(n.id), txt, { '.tag':'add' }); } catch (_){}
+        const merged = other ? mergeNotes(rec.note, other) : rec.note;
+        rec.note = merged; await putRec(rec);
+        if (Editor.cur && Editor.cur.id === n.id){ Editor.cur = JSON.parse(JSON.stringify(merged)); Editor.fill(); toast('Sedlen var også rettet på en anden enhed – ændringerne er flettet'); }
+        meta = await Dbx.upload(P.note(n.id), JSON.stringify(merged), { '.tag':'overwrite' });
+      }
+      rec = cache.get(n.id);
+      rec.rev = meta.rev;
+      if (rec.ver === ver) rec.dirty = false;
+      await putRec(rec);
+    }
+  },
+  async patchNote(id, patch){       // system-felter, tæller ikke som brugerændring
+    const rec = cache.get(id); Object.assign(rec.note, patch); await putRec(rec);
+    if (Editor.cur && Editor.cur.id === id) Object.assign(Editor.cur, patch), Editor.renderHead();
+  },
+  async pull(){
+    let cursor = LS.get('cursor'), entries = [], res;
+    try {
+      if (cursor) res = await Dbx.rpc('files/list_folder/continue', { cursor });
+      else res = await Dbx.rpc('files/list_folder', { path: P.data(), recursive: false, limit: 2000 });
+    } catch (e) {
+      if (cursor && e instanceof DbxError && e.status === 409){ LS.del('cursor'); return this.pull(); }
+      if (isNotFound(e)) return;     // mappen findes ikke endnu
+      throw e;
+    }
+    entries.push(...res.entries);
+    while (res.has_more){ res = await Dbx.rpc('files/list_folder/continue', { cursor: res.cursor }); entries.push(...res.entries); }
+    for (const e of entries){
+      if (e['.tag'] !== 'file' || !e.name.endsWith('.json')) continue;
+      const id = e.name.slice(0, -5), rec = cache.get(id);
+      if (rec && (rec.rev === e.rev || rec.dirty)) continue;
+      const note = JSON.parse(await Dbx.download(e.path_display || e.path_lower));
+      const cur = cache.get(id);
+      if (cur && cur.dirty) continue;
+      await putRec({ id, note, rev: e.rev, dirty: false, ver: cur ? cur.ver : 0 });
+      if (Editor.cur && Editor.cur.id === id) Editor.reloadFromCache();
+    }
+    LS.set('cursor', res.cursor);
+  }
+};
+
+function mergeNotes(mine, theirs){
+  const m = JSON.parse(JSON.stringify(mine));
+  for (const k of Object.keys(m.fields)) if (!(m.fields[k]||'').trim() && (theirs.fields[k]||'').trim()) m.fields[k] = theirs.fields[k];
+  m.rows = m.rows.map((r, i) => { const t = (theirs.rows||[])[i] || {}; return { fejl: r.fejl || t.fejl || '', mat: r.mat || t.mat || '', antal: r.antal || t.antal || '' }; });
+  const seen = new Set(m.strokes.map(x => JSON.stringify(x.p.slice(0,3))));
+  (theirs.strokes||[]).forEach(x => { const k = JSON.stringify(x.p.slice(0,3)); if (!seen.has(k)){ seen.add(k); m.strokes.push(x); } });
+  const rank = { aaben:0, faerdig:1, tastet:2 };
+  if (rank[theirs.status] > rank[m.status]){ ['status','faerdigAt','faerdigBy','tastetAt','tastetBy'].forEach(k => m[k] = theirs[k]); }
+  m.afventer = m.status === 'aaben' && (m.afventer || theirs.afventer);
+  m.nr = m.nr || theirs.nr;
+  const logs = new Map([...(theirs.log||[]), ...(m.log||[])].map(l => [l.t + l.a, l])); m.log = [...logs.values()].sort((a,b) => a.t.localeCompare(b.t));
+  m.contentRev = Math.max(m.contentRev||0, theirs.contentRev||0) + 1;
+  return m;
+}
+
+/* =====================================================================
+   LISTE
+   ===================================================================== */
+let curTab = 'aaben';
+function renderSyncChip(){
+  const chip = $('syncChip'), n = Sync.pendingCount();
+  chip.classList.remove('bad');
+  if (!Dbx.linked){ chip.textContent = 'Kun lokalt'; chip.classList.add('bad'); return; }
+  if (Sync.busy){ chip.textContent = '⟳ Synkroniserer'; return; }
+  if (Sync.lastErr){ chip.textContent = navigator.onLine ? '⚠ Synk-fejl' : '⚠ Offline'; chip.classList.add('bad'); if (n) chip.textContent += ` (${n})`; return; }
+  chip.textContent = n ? `⟳ ${n} venter` : '✓ Synkroniseret';
+}
+function noteSearchText(n){
+  const f = n.fields;
+  return [fmtNr(n.nr), f.kunde, f.model, f.serienr, normSN(f.serienr), f.sagsnr, n.createdBy, ...n.rows.map(r => r.fejl + ' ' + r.mat)].join(' ').toLowerCase();
+}
+function renderList(){
+  const q = $('q').value.trim().toLowerCase();
+  const recs = [...cache.values()].filter(r => !(r.note.nr == null && isEmptyNote(r.note)));
+  const cnt = { aaben:0, faerdig:0, tastet:0 }; recs.forEach(r => cnt[r.note.status]++);
+  $('cA').textContent = cnt.aaben; $('cF').textContent = cnt.faerdig; $('cT').textContent = cnt.tastet;
+  let items = recs.filter(r => r.note.status === curTab && (!q || noteSearchText(r.note).includes(q)));
+  items.sort((a,b) => curTab === 'aaben' ? a.note.created.localeCompare(b.note.created) : (b.note.faerdigAt||b.note.updated).localeCompare(a.note.faerdigAt||a.note.updated));
+  if (curTab === 'tastet') items = items.slice(0, 300);
+  const ul = $('list');
+  if (!items.length){ ul.innerHTML = `<li class="empty">${q ? 'Ingen sedler matcher søgningen.' : curTab === 'faerdig' ? 'Alt er tastet i Ordrestyring 👍' : curTab === 'aaben' ? 'Ingen åbne sedler.' : 'Arkivet er tomt.'}</li>`; return; }
+  ul.innerHTML = items.map(r => {
+    const n = r.note, f = n.fields, age = daysSince(n.created);
+    const old = n.status === 'aaben' && age >= OLD_DAYS;
+    const badges = (n.afventer && n.status === 'aaben' ? '<span class="badge b-wait">Afventer dele</span>' : '') +
+      (old ? `<span class="badge b-old">${age} dage</span>` : '') + (r.dirty ? '<span class="badge b-sync">⟳ ikke synk.</span>' : '');
+    const t3 = n.status === 'aaben' ? `Oprettet ${dk(n.created)}${n.createdBy ? ' · ' + esc(n.createdBy) : ''}${f.tid ? ' · ' + esc(f.tid) + ' t' : ''}`
+      : n.status === 'faerdig' ? `Færdig ${dk(n.faerdigAt)}${n.faerdigBy ? ' · ' + esc(n.faerdigBy) : ''} · ${esc(f.tid)} t`
+      : `Tastet ${dk(n.tastetAt)}${n.tastetBy ? ' · ' + esc(n.tastetBy) : ''}${f.sagsnr ? ' · sag ' + esc(f.sagsnr) : ''}`;
+    const q = n.status === 'faerdig' ? `<button class="qbtn" data-tast="${r.id}">✓ Tastet</button>` : '';
+    return `<li class="item ${n.afventer && n.status==='aaben' ? 'wait' : old ? 'old' : ''}" data-id="${r.id}">
+      <div class="main"><div class="t1">${esc(fmtNr(n.nr))} · ${esc(f.kunde || '(ingen kunde)')}${badges}</div>
+      <div class="t2">${esc(f.model)}${f.serienr ? ' · SN ' + esc(f.serienr) : ''} · ${esc(dmy(f.dato))}</div>
+      <div class="t3">${t3}</div></div>${q}</li>`;
+  }).join('');
+}
+function renderListBanners(){
+  const b = [];
+  if (!cfg.name) b.push(`<div class="banner warn">Skriv dit navn eller initialer under <button class="link" data-go="settings">Indstillinger</button>, så det fremgår hvem der har lavet sedlen.</div>`);
+  if (!cfg.appKey) b.push(`<div class="banner err">Dropbox er ikke sat op (App key mangler). Sedler gemmes kun på denne enhed. <button class="link" data-go="settings">Indstillinger</button></div>`);
+  else if (!Dbx.linked) b.push(`<div class="banner err"><b>Ikke forbundet til Dropbox.</b> Sedler gemmes kun på denne enhed, indtil du logger ind. <button class="link" data-go="settings">Log ind</button></div>`);
+  let oldN = 0; cache.forEach(r => { if (r.note.status === 'aaben' && r.note.nr && daysSince(r.note.created) >= OLD_DAYS) oldN++; });
+  if (oldN) b.push(`<div class="banner warn">${oldN} åben${oldN>1?'e':''} seddel${oldN>1?'er':''} er over ${OLD_DAYS} dage gammel – mangler de at blive gjort færdige?</div>`);
+  $('listBanners').innerHTML = b.join('');
+}
+$('tabs').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; curTab = b.dataset.t; [...$('tabs').children].forEach(x => x.classList.toggle('on', x === b)); renderList(); });
+$('q').addEventListener('input', renderList);
+$('list').addEventListener('click', async e => {
+  const t = e.target.closest('[data-tast]');
+  if (t){ e.stopPropagation(); await markTastet(t.dataset.tast); return; }
+  const li = e.target.closest('.item'); if (li) Editor.open(li.dataset.id);
+});
+document.addEventListener('click', e => { const g = e.target.closest('[data-go="settings"]'); if (g) showSettings(); });
+$('bNew').addEventListener('click', () => Editor.create());
+$('bSettings').addEventListener('click', showSettings);
+
+function show(view){ ['vList','vEdit','vSettings'].forEach(v => $(v).classList.toggle('show', v === view)); window.scrollTo(0,0); }
+function refreshViews(){ if ($('vList').classList.contains('show')){ renderList(); renderListBanners(); } if ($('vSettings').classList.contains('show')) renderSettings(); renderSyncChip(); }
+
+/* =====================================================================
+   EDITOR
+   ===================================================================== */
+const Editor = {
+  cur: null, saveT: null, penSeen: LS.get('penSeen', false), tool: 'pen', undo: [], geo: null,
+  build(){
+    const rows = $('rows');
+    for (let i=0;i<ROWS;i++){
+      const row = document.createElement('div'); row.className = 'row'; row.dataset.i = i;
+      row.innerHTML = `<input data-k="fejl" autocomplete="off"><input data-k="mat" autocomplete="off">
+        <div class="q"><button data-d="-1" aria-label="Minus">−</button><input data-k="antal" inputmode="numeric" autocomplete="off"><button data-d="1" aria-label="Plus">+</button></div>`;
+      rows.appendChild(row);
+    }
+    rows.addEventListener('input', e => {
+      const inp = e.target.closest('input'); if (!inp || !this.cur) return;
+      const i = +inp.closest('.row').dataset.i; this.cur.rows[i][inp.dataset.k] = inp.value; this.changed();
+    });
+    rows.addEventListener('click', e => {
+      const b = e.target.closest('button[data-d]'); if (!b || !this.cur || this.readOnly()) return;
+      const i = +b.closest('.row').dataset.i, r = this.cur.rows[i];
+      const v = parseNum(r.antal) + (+b.dataset.d); r.antal = v > 0 ? String(v) : '';
+      b.parentElement.querySelector('input').value = r.antal; this.changed();
+    });
+    fieldIds.forEach(id => $(id).addEventListener('input', () => {
+      if (!this.cur) return; this.cur.fields[id] = $(id).value; $(id).parentElement.classList.remove('missing');
+      if (id === 'serienr') this.renderHist(); this.changed();
+    }));
+    $('afventer').addEventListener('change', () => { if (this.cur){ this.cur.afventer = $('afventer').checked; this.changed(); } });
+    this.initPen();
+    window.addEventListener('resize', () => { if (this.cur) this.layout(); });
+    $('bBack').addEventListener('click', () => this.close());
+    $('bMenu').addEventListener('click', () => this.menu());
+  },
+  readOnly(){ return !this.cur || this.cur.status !== 'aaben'; },
+  async create(){
+    const n = newNote(); await putRec({ id: n.id, note: n, rev: null, dirty: true, ver: 1 });
+    this.show(n); setTimeout(() => $('kunde').focus(), 100);
+  },
+  async open(id){ const rec = cache.get(id); if (rec) this.show(JSON.parse(JSON.stringify(rec.note))); },
+  reloadFromCache(){ const rec = cache.get(this.cur.id); if (rec && !rec.dirty){ this.cur = JSON.parse(JSON.stringify(rec.note)); this.fill(); toast('Sedlen blev opdateret fra en anden enhed'); } },
+  show(n){
+    this.cur = n; this.undo = []; show('vEdit'); this.fill();
+    if (location.hash !== '#seddel') history.pushState({ v:'edit' }, '', '#seddel');
+  },
+  fill(){
+    const n = this.cur;
+    fieldIds.forEach(id => { $(id).value = n.fields[id] || ''; $(id).parentElement.classList.remove('missing'); });
+    $('afventer').checked = !!n.afventer;
+    [...$('rows').querySelectorAll('.row')].forEach((row, i) => {
+      const r = n.rows[i] || { fejl:'', mat:'', antal:'' };
+      row.querySelector('[data-k=fejl]').value = r.fejl; row.querySelector('[data-k=mat]').value = r.mat; row.querySelector('[data-k=antal]').value = r.antal;
+    });
+    const ro = this.readOnly();
+    $('eWrap').classList.toggle('ro', ro);
+    $('eWrap').querySelectorAll('input').forEach(i => i.disabled = ro);
+    document.body.classList.toggle('pen-device', this.penSeen && !ro);
+    this.renderHead(); this.renderHist(); this.layout();
+  },
+  renderHead(){
+    const n = this.cur; if (!n) return;
+    $('eTitle').textContent = n.nr ? fmtNr(n.nr) : 'Ny seddel';
+    $('eStatus').textContent = { aaben: n.afventer ? 'Afventer dele' : 'Åben', faerdig:'Færdig – ikke tastet', tastet:'Tastet ✓' }[n.status];
+    const b = [];
+    if (n.status === 'faerdig') b.push(`<div class="banner info">Færdigmeldt ${dkt(n.faerdigAt)}${n.faerdigBy ? ' af ' + esc(n.faerdigBy) : ''}. Sedlen er låst – tryk <b>Genåbn</b> for at rette.</div>`);
+    if (n.status === 'tastet') b.push(`<div class="banner info">Tastet i Ordrestyring ${dkt(n.tastetAt)}${n.tastetBy ? ' af ' + esc(n.tastetBy) : ''}${n.fields.sagsnr ? ' – sag ' + esc(n.fields.sagsnr) : ''}.</div>`);
+    $('eBanners').innerHTML = b.join('');
+    this.renderActions();
+  },
+  renderActions(){
+    const n = this.cur, rec = cache.get(n.id);
+    const info = !Dbx.linked ? 'Gemt på denne enhed (ikke forbundet til Dropbox)' : rec && rec.dirty ? '⟳ Gemt – venter på synkronisering' : '✓ Gemt og synkroniseret';
+    let html = `<div class="info">${info}</div>`;
+    if (n.status === 'aaben') html += `<button class="primary" id="aDone">✓ Færdig</button>`;
+    if (n.status === 'faerdig') html += `<button id="aReopen">Genåbn</button><button class="blue" id="aTast">✓ Tastet i Ordrestyring</button>`;
+    if (n.status === 'tastet') html += `<button id="aUntast">Fortryd "tastet"</button>`;
+    $('eActions').innerHTML = html;
+    const on = (id, fn) => { const el = $(id); if (el) el.onclick = fn; };
+    on('aDone', () => this.done()); on('aReopen', () => this.reopen()); on('aTast', () => markTastet(n.id)); on('aUntast', () => this.untast());
+  },
+  renderHist(){
+    const n = this.cur, sn = normSN(n.fields.serienr), box = $('hist');
+    if (sn.length < 3){ box.innerHTML = ''; return; }
+    const prev = [...cache.values()].map(r => r.note).filter(o => o.id !== n.id && o.nr && normSN(o.fields.serienr) === sn)
+      .sort((a,b) => b.created.localeCompare(a.created));
+    if (!prev.length){ box.innerHTML = ''; return; }
+    const d = daysSince(prev[0].created);
+    box.innerHTML = `<div class="banner ${d <= 60 ? 'err' : 'warn'}"><b>⚠ Denne enhed har været inde før</b> (${prev.length} gang${prev.length>1?'e':''}) – seneste for ${d} dage siden:` +
+      prev.slice(0,5).map(o => `<button class="link" data-open="${o.id}">${esc(fmtNr(o.nr))} · ${esc(dmy(o.fields.dato))} · ${esc(o.rows.map(r => r.fejl).filter(Boolean).join(', ').slice(0,60) || o.fields.model)}</button>`).join('') + '</div>';
+    box.querySelectorAll('[data-open]').forEach(b => b.onclick = () => this.open(b.dataset.open));
+  },
+  changed(){
+    const n = this.cur; n.updated = nowIso(); n.updatedBy = cfg.name; this._contentDirty = true;
+    clearTimeout(this.saveT); this.saveT = setTimeout(() => this.save(), 400);
+    const i = $('eActions').querySelector('.info'); if (i) i.textContent = '… gemmer';
+  },
+  async save(opts){
+    clearTimeout(this.saveT);
+    const n = this.cur; if (!n) return;
+    const rec = cache.get(n.id) || { id: n.id, rev: null, ver: 0 };
+    if (this._contentDirty){ n.contentRev = (rec.note ? rec.note.contentRev : n.contentRev) + 1; this._contentDirty = false; }
+    // behold system-felter fra cachen (nr, pdf) som synk kan have sat imens
+    if (rec.note){ n.nr = n.nr || rec.note.nr; n.pdfPath = rec.note.pdfPath; n.pdfStamp = rec.note.pdfStamp; }
+    rec.note = JSON.parse(JSON.stringify(n)); rec.dirty = true; rec.ver = (rec.ver||0) + 1;
+    await putRec(rec);
+    this.renderActions();
+    Sync.soon(opts && opts.now ? 100 : 2500);
+  },
+  async close(fromPop){
+    if (!this.cur) return;
+    await this.save();
+    const rec = cache.get(this.cur.id);
+    if (rec && !rec.note.nr && !rec.rev && isEmptyNote(rec.note)){ cache.delete(rec.id); await DB.del(rec.id); }
+    this.cur = null; document.body.classList.remove('pen-device');
+    show('vList'); refreshViews();
+    if (!fromPop && location.hash === '#seddel') history.back();
+    Sync.soon(300);
+  },
+  validate(){
+    const n = this.cur, f = n.fields, miss = [];
+    const need = [['kunde','Kunde'],['model','Model'],['serienr','Serienr.'],['dato','Dato']];
+    need.forEach(([id,l]) => { if (!(f[id]||'').trim()){ miss.push(l); $(id).parentElement.classList.add('missing'); } });
+    if (!(parseNum(f.tid) > 0)){ miss.push('Tid (timer)'); $('tid').parentElement.classList.add('missing'); }
+    if (!n.rows.some(r => r.fejl.trim()) && !n.strokes.length) miss.push('Fejl / udført arbejde');
+    return miss;
+  },
+  async done(){
+    const miss = this.validate();
+    if (miss.length){ await dialog('Før sedlen kan meldes færdig, mangler:\n\n• ' + miss.join('\n• '), [['OK', true, true]]); return; }
+    if (!cfg.name){ const r = await dialog('Skriv dine initialer (gemmes på enheden):', [['Annuller', false], ['OK', true, true]], { placeholder:'fx VSJ' }); if (!r.v || !r.text.trim()) return; LS.set('name', r.text.trim()); }
+    const n = this.cur, f = n.fields;
+    const ok = await dialog(`Meld sedlen færdig?\n\n${f.kunde} · ${f.model} · SN ${f.serienr}\n${f.tid} timer · ${dmy(f.dato)}${n.afventer ? '\n\nBemærk: "Afventer dele" er sat – den fjernes.' : ''}`, [['Annuller', false], ['✓ Færdig', true, true]]);
+    if (!ok) return;
+    n.status = 'faerdig'; n.afventer = false; n.faerdigAt = nowIso(); n.faerdigBy = cfg.name;
+    n.log.push({ t: nowIso(), by: cfg.name, a: 'færdig' }); n.updated = nowIso();
+    await this.save({ now: true }); toast('✓ Meldt færdig – PDF lægges i Dropbox'); this.close();
+  },
+  async reopen(){
+    const ok = await dialog('Genåbn sedlen? PDF\'en fjernes fra "Færdige – ikke tastet", indtil den meldes færdig igen.', [['Annuller', false], ['Genåbn', true, true]]);
+    if (!ok) return;
+    const n = this.cur; n.status = 'aaben'; n.faerdigAt = null; n.faerdigBy = null; n.log.push({ t: nowIso(), by: cfg.name, a: 'genåbnet' });
+    await this.save({ now: true }); this.fill();
+  },
+  async untast(){
+    const ok = await dialog('Fortryd "tastet i Ordrestyring"? Sedlen flyttes tilbage til "Færdige – ikke tastet".', [['Annuller', false], ['Fortryd', true, true]]);
+    if (!ok) return;
+    const n = this.cur; n.status = 'faerdig'; n.tastetAt = null; n.tastetBy = null; n.log.push({ t: nowIso(), by: cfg.name, a: 'tastet fortrudt' });
+    await this.save({ now: true }); this.fill();
+  },
+  async menu(){
+    const r = await dialog('Seddel ' + (this.cur.nr ? fmtNr(this.cur.nr) : '(ny)'), [['Luk', 0], ['⤓ Hent PDF', 1, true]]);
+    if (r === 1){ const pdf = await makePdf(this.cur); download(new Blob([pdf], { type:'application/pdf' }), pdfName(this.cur)); }
+  },
+  /* ---------- pen ---------- */
+  layout(){
+    const rows = $('rows'), w = rows.clientWidth;
+    const rowPx = Math.round(Math.max(44, Math.min(64, w * ROW_H / LW)));
+    rows.querySelectorAll('.row').forEach(r => r.style.height = rowPx + 'px');
+    const colPx = w * (COLX[3]-COLX[2]) / LW, btn = Math.round(Math.max(26, Math.min(42, rowPx - 10, colPx * 0.3)));
+    rows.querySelectorAll('.q button').forEach(b => { b.style.width = btn+'px'; b.style.height = btn+'px'; b.style.fontSize = Math.round(btn*.6)+'px'; });
+    const cv = $('ink'), dpr = window.devicePixelRatio || 1, cw = w * PEN_W / LW, ch = rowPx * ROWS + ROWS;
+    cv.style.width = cw + 'px'; cv.style.height = ch + 'px'; cv.width = Math.round(cw*dpr); cv.height = Math.round(ch*dpr);
+    this.geo = { sx: w / LW, sy: (rowPx + 1) / ROW_H, dpr };
+    this.redraw();
+  },
+  redraw(){
+    const cv = $('ink'), g = cv.getContext('2d'), G = this.geo; if (!G) return;
+    g.setTransform(1,0,0,1,0,0); g.clearRect(0,0,cv.width,cv.height);
+    g.setTransform(G.sx*G.dpr, 0, 0, G.sy*G.dpr, 0, 0);
+    (this.cur ? this.cur.strokes : []).forEach(s => drawStroke(g, s));
+  },
+  initPen(){
+    const rows = $('rows'); let active = null, cur = null, erasing = false;
+    const pt = e => { const r = rows.getBoundingClientRect(), G = this.geo; return [ (e.clientX - r.left)/G.sx, (e.clientY - r.top)/G.sy, e.pressure || 0.5 ]; };
+    const eraseAt = p => {
+      const R2 = 18*18, before = this.cur.strokes.length;
+      this.cur.strokes = this.cur.strokes.filter(s => !s.p.some(q => (q[0]-p[0])**2 + (q[1]-p[1])**2 < R2));
+      if (this.cur.strokes.length !== before){ this.redraw(); this.changed(); }
+    };
+    rows.addEventListener('pointerdown', e => {
+      if (e.pointerType !== 'pen' || this.readOnly() || active !== null) return;
+      if (!this.penSeen){ this.penSeen = true; LS.set('penSeen', true); document.body.classList.add('pen-device'); }
+      e.preventDefault(); if (document.activeElement) document.activeElement.blur();
+      active = e.pointerId; try { rows.setPointerCapture(e.pointerId); } catch(_){}
+      const p = pt(e); if (p[0] > PEN_W) { active = null; return; }
+      this.undo.push(this.cur.strokes.slice()); if (this.undo.length > 60) this.undo.shift();
+      erasing = this.tool === 'erase' || (e.buttons & 2) || (e.buttons & 32);
+      if (erasing){ eraseAt(p); return; }
+      cur = { c:'#1b1f24', w:3, p:[p] }; this.cur.strokes.push(cur); this.redraw();
+    });
+    rows.addEventListener('pointermove', e => {
+      if (e.pointerId !== active) return; e.preventDefault();
+      const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+      for (const ev of (evs.length ? evs : [e])){
+        const p = pt(ev);
+        if (erasing){ eraseAt(p); continue; }
+        const last = cur.p[cur.p.length-1]; if ((p[0]-last[0])**2 + (p[1]-last[1])**2 < 1) continue;
+        cur.p.push([Math.round(p[0]*10)/10, Math.round(p[1]*10)/10, Math.round(p[2]*100)/100]);
+      }
+      this.redraw();
+    });
+    const end = e => { if (e.pointerId !== active) return; active = null; if (cur){ cur = null; this.changed(); } erasing = false; };
+    rows.addEventListener('pointerup', end); rows.addEventListener('pointercancel', end);
+    $('tPen').onclick = () => { this.tool = 'pen'; $('tPen').classList.add('on'); $('tErase').classList.remove('on'); };
+    $('tErase').onclick = () => { this.tool = 'erase'; $('tErase').classList.add('on'); $('tPen').classList.remove('on'); };
+    $('tUndo').onclick = () => { if (this.undo.length && !this.readOnly()){ this.cur.strokes = this.undo.pop(); this.redraw(); this.changed(); } };
+  }
+};
+
+async function markTastet(id){
+  const rec = cache.get(id); if (!rec) return;
+  const n = JSON.parse(JSON.stringify(rec.note)), f = n.fields;
+  const r = await dialog(`Er ${fmtNr(n.nr)} tastet i Ordrestyring?\n${f.kunde} · ${f.model} · ${f.tid} t\n\nSagsnr. i Ordrestyring:`, [['Annuller', false], ['✓ Tastet', true, true]], { value: f.sagsnr, placeholder: 'Sagsnr. (valgfrit)', mode: 'numeric' });
+  if (!r.v) return;
+  if (!cfg.name){ const k = await dialog('Skriv dine initialer:', [['OK', true, true]], { placeholder:'fx VSJ' }); if (k.text.trim()) LS.set('name', k.text.trim()); }
+  if (r.text.trim() !== (f.sagsnr||'')){ f.sagsnr = r.text.trim(); n.contentRev++; }
+  n.status = 'tastet'; n.tastetAt = nowIso(); n.tastetBy = cfg.name; n.updated = nowIso(); n.updatedBy = cfg.name;
+  n.log.push({ t: nowIso(), by: cfg.name, a: 'tastet i Ordrestyring' });
+  rec.note = n; rec.dirty = true; rec.ver = (rec.ver||0) + 1; await putRec(rec);
+  if (Editor.cur && Editor.cur.id === id){ Editor.cur = JSON.parse(JSON.stringify(n)); Editor.fill(); }
+  toast('✓ Flyttet til arkivet'); refreshViews(); Sync.soon(200);
+}
+
+/* =====================================================================
+   INDSTILLINGER
+   ===================================================================== */
+function showSettings(){ show('vSettings'); renderSettings(); if (location.hash !== '#indstillinger') history.pushState({ v:'set' }, '', '#indstillinger'); }
+function renderSettings(){
+  $('sName').value = cfg.name; $('sKey').value = cfg.appKey; $('sBase').value = cfg.base;
+  $('sVer').textContent = `Version ${APP_VERSION} · ${cache.size} sedler på enheden`;
+  const acc = LS.get('account'), card = $('dbxCard');
+  if (!cfg.appKey) card.innerHTML = `<h2>Dropbox</h2><p>App key mangler – udfyld den under Avanceret.</p>`;
+  else if (Dbx.linked) card.innerHTML = `<h2>Dropbox</h2><p>Forbundet${acc ? ' som <b>' + esc(acc.name) + '</b> (' + esc(acc.email) + ')' : ''}.<br>Mappe: <b>${esc(cfg.base)}</b>${LS.get('rootNs') ? ' (team-mappe)' : ''}</p><button class="btn red" id="bLogout">Log ud</button>`;
+  else card.innerHTML = `<h2>Dropbox</h2><p>Log ind med den Dropbox-konto, der har adgang til mappen <b>${esc(cfg.base)}</b>.</p>
+    <button class="btn blue" id="bLogin">Log ind med Dropbox</button>
+    <p style="margin-top:10px"><button class="link" id="bLoginCode" style="background:none;border:none;color:#0b5cad;text-decoration:underline;padding:0">Virker det ikke? Log ind med kode</button></p>`;
+  const n = Sync.pendingCount();
+  $('sSyncInfo').innerHTML = (n ? `<b>${n}</b> seddel/sedler venter på at blive sendt til Dropbox.` : 'Alt er sendt til Dropbox.') +
+    (Sync.lastOk ? `<br>Sidst synkroniseret ${new Date(Sync.lastOk).toLocaleTimeString('da-DK')}.` : '') +
+    (Sync.lastErr ? `<br><span style="color:#c0362c">Fejl: ${esc(Sync.lastErr.message)}</span>` : '');
+  const on = (id, fn) => { const el = $(id); if (el) el.onclick = fn; };
+  on('bLogout', async () => {
+    const pend = Sync.pendingCount();
+    const ok = await dialog(pend ? `Der er ${pend} ikke-synkroniserede sedler på enheden. De bliver liggende her og sendes, når du logger ind igen.\n\nLog ud?` : 'Log ud af Dropbox på denne enhed?', [['Annuller', false], ['Log ud', true, true]]);
+    if (ok){ Dbx.logout(); refreshViews(); }
+  });
+  on('bLogin', async () => { location.href = await Dbx.authUrl(true); });
+  on('bLoginCode', async () => {
+    const url = await Dbx.authUrl(false);
+    window.open(url, '_blank');
+    const r = await dialog('Et nyt vindue med Dropbox er åbnet. Log ind, tryk "Tillad", kopiér koden og indsæt den her:', [['Annuller', false], ['Forbind', true, true]], { placeholder: 'Kode fra Dropbox' });
+    if (!r.v || !r.text.trim()) return;
+    try { await Dbx.exchange(r.text, false); toast('✓ Forbundet til Dropbox'); renderSettings(); Sync.run(); }
+    catch (e) { dialog('Kunne ikke forbinde: ' + e.message, [['OK', true, true]]); }
+  });
+}
+$('sName').addEventListener('input', () => LS.set('name', $('sName').value.trim()));
+$('bSaveAdv').addEventListener('click', () => {
+  const k = $('sKey').value.trim(), b = $('sBase').value.trim();
+  if (k !== cfg.appKey){ LS.set('appKey', k); Dbx.logout(); }
+  if (b && b !== cfg.base){ LS.set('base', b.startsWith('/') ? b : '/' + b); LS.del('cursor'); }
+  toast('Gemt'); renderSettings(); refreshViews();
+});
+$('bSetBack').addEventListener('click', () => { show('vList'); refreshViews(); if (location.hash === '#indstillinger') history.back(); });
+$('bSyncNow').addEventListener('click', () => { Sync.run(); toast('Synkroniserer…'); });
+$('bBlank').addEventListener('click', async () => download(new Blob([await makePdf(null)], { type:'application/pdf' }), 'Tom-reparationsseddel.pdf'));
+$('bCsv').addEventListener('click', () => {
+  const cols = ['Nr','Status','Afventer dele','Dato','Kunde','Model','Serienr','Sagsnr','Timer','Oprettet','Oprettet af','Færdig','Færdig af','Tastet','Tastet af','Fejl / udført arbejde','Materialer'];
+  const st = { aaben:'Åben', faerdig:'Færdig - ikke tastet', tastet:'Tastet' };
+  const q = v => '"' + String(v ?? '').replace(/"/g,'""') + '"';
+  const lines = [...cache.values()].map(r => r.note).filter(n => n.nr).sort((a,b) => a.nr - b.nr).map(n => [
+    fmtNr(n.nr), st[n.status], n.afventer ? 'Ja' : '', dmy(n.fields.dato), n.fields.kunde, n.fields.model, n.fields.serienr, n.fields.sagsnr,
+    String(n.fields.tid||'').replace('.',','), dkt(n.created), n.createdBy, dkt(n.faerdigAt), n.faerdigBy||'', dkt(n.tastetAt), n.tastetBy||'',
+    n.rows.map(r => r.fejl).filter(Boolean).join(' | '), n.rows.filter(r => r.mat).map(r => r.mat + (r.antal ? ' x' + r.antal : '')).join(' | ')
+  ].map(q).join(';'));
+  download(new Blob(['﻿' + [cols.map(q).join(';'), ...lines].join('\r\n')], { type:'text/csv;charset=utf-8' }), `Reparationssedler_${today()}.csv`);
+});
+
+/* =====================================================================
+   OPSTART
+   ===================================================================== */
+window.addEventListener('popstate', () => {
+  if ($('vEdit').classList.contains('show') && location.hash !== '#seddel') Editor.close(true);
+  else if ($('vSettings').classList.contains('show') && location.hash !== '#indstillinger'){ show('vList'); refreshViews(); }
+});
+window.addEventListener('online', () => Sync.soon(500));
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') Sync.soon(300); else if (Editor.cur) Editor.save(); });
+window.addEventListener('pagehide', () => { if (Editor.cur) Editor.save(); });
+
+(async function start(){
+  Editor.build();
+  try { await DB.open(); await loadCache(); }
+  catch (e) { document.body.innerHTML = '<div class="wrap"><div class="banner err">Kan ikke åbne den lokale database på denne enhed (' + esc(e.message) + '). Prøv en anden browser – privat/inkognito-tilstand understøttes ikke.</div></div>'; return; }
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch(_){}
+  // retur fra Dropbox-login
+  const qp = new URLSearchParams(location.search);
+  if (qp.get('code')){
+    history.replaceState(null, '', location.pathname);
+    try { await Dbx.exchange(qp.get('code'), true); toast('✓ Forbundet til Dropbox'); }
+    catch (e) { await dialog('Dropbox-login fejlede: ' + e.message, [['OK', true, true]]); }
+  } else if (qp.get('error')) { history.replaceState(null, '', location.pathname); toast('Dropbox-login annulleret'); }
+  if (location.hash) history.replaceState(null, '', location.pathname);
+  show('vList'); refreshViews();
+  Sync.run();
+  setInterval(() => { if (document.visibilityState === 'visible') Sync.run(); }, 60000);
+  if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+})();
+</script>
+</body>
+</html>
