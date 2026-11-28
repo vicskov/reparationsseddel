@@ -209,7 +209,7 @@ small.mono{font-family:ui-monospace,monospace;font-size:12px;color:var(--muted);
 /* =====================================================================
    KONFIGURATION – udfyldes ved opsætning
    ===================================================================== */
-const APP_VERSION = '1.0.0';
+const APP_VERSION = '1.1.0';
 const DEFAULT_APP_KEY = 'cdlkzvwoo0vkdpl';                       // Dropbox App key
 const DEFAULT_BASE = '/Victor/DanskDJTeknik/Reparationssedler';        // mappe i Dropbox
 const OLD_DAYS = 14;                              // advarsel når en åben seddel er ældre end dette
@@ -218,6 +218,7 @@ const OLD_DAYS = 14;                              // advarsel når en åben sedd
 const ROWS = 12, LW = 1000, ROW_H = 70, PEN_W = 760;   // logisk geometri (pen + PDF)
 const COLX = [0, 430, 760, 1000];
 const $ = id => document.getElementById(id);
+const MONTHS = ['januar','februar','marts','april','maj','juni','juli','august','september','oktober','november','december'];
 const fieldIds = ['kunde','model','serienr','sagsnr','dato','tid'];
 
 /* ---------- små hjælpere ---------- */
@@ -304,6 +305,7 @@ const P = {
   counter:() => cfg.base + '/_system/counter.json',
   conflict:(id) => `${cfg.base}/_system/konflikter/${id}_${Date.now()}.json`,
   faerdig:name => `${cfg.base}/Færdige - ikke tastet/${name}`,
+  hours:  ym => `${cfg.base}/Timer/${ym} ${MONTHS[+ym.slice(5,7)-1]}.txt`,
   arkiv:  (name, y) => `${cfg.base}/Arkiv/${y}/${name}`
 };
 const headerJson = o => JSON.stringify(o).replace(/[\u007f-￿]/g, c => '\\u' + ('000' + c.charCodeAt(0).toString(16)).slice(-4));
@@ -520,6 +522,7 @@ const Sync = {
     try {
       await this.push();
       await this.pull();
+      try { await this.writeHours(); } catch (e) { console.warn('timer-fil', e); }
       this.lastOk = Date.now(); this.lastErr = null;
     } catch (e) {
       this.lastErr = e; console.warn('sync', e);
@@ -597,6 +600,33 @@ const Sync = {
   async patchNote(id, patch){       // system-felter, tæller ikke som brugerændring
     const rec = cache.get(id); Object.assign(rec.note, patch); await putRec(rec);
     if (Editor.cur && Editor.cur.id === id) Object.assign(Editor.cur, patch), Editor.renderHead();
+  },
+  /* Månedsfil med timer pr. medarbejder: Timer/ÅÅÅÅ-MM måned.txt
+     Tæller færdigmeldte og tastede sedler, efter datoen på sedlen, på den der meldte færdig. */
+  async writeHours(){
+    const months = {};
+    cache.forEach(r => {
+      const n = r.note; if (!n.nr || (n.status !== 'faerdig' && n.status !== 'tastet')) return;
+      const ym = (n.fields.dato || '').slice(0,7); if (!/^\d{4}-\d{2}$/.test(ym)) return;
+      (months[ym] = months[ym] || []).push(n);
+    });
+    const sent = LS.get('hoursSent', {}), fmt = v => v.toLocaleString('da-DK', { maximumFractionDigits: 2 });
+    for (const ym of Object.keys(sent)) if (!months[ym]) months[ym] = [];
+    for (const [ym, list] of Object.entries(months)){
+      const per = {};
+      list.forEach(n => { const who = (n.faerdigBy || n.createdBy || 'Ukendt').trim() || 'Ukendt'; per[who] = (per[who] || 0) + parseNum(n.fields.tid); });
+      const names = Object.keys(per).sort((a,b) => per[b] - per[a] || a.localeCompare(b, 'da'));
+      const w = Math.max(6, ...names.map(x => x.length)) + 2, total = names.reduce((a,x) => a + per[x], 0);
+      const L = [`Reparationstimer ${MONTHS[+ym.slice(5,7)-1]} ${ym.slice(0,4)}`, '(færdigmeldte sedler, efter datoen på sedlen)', ''];
+      names.forEach(x => L.push(x.padEnd(w) + fmt(per[x]) + ' t'));
+      if (!names.length) L.push('Ingen færdigmeldte sedler.');
+      L.push('', 'I alt'.padEnd(w) + fmt(total) + ' t', '', 'Sedler:');
+      list.slice().sort((a,b) => a.nr - b.nr).forEach(n => L.push(`  ${fmtNr(n.nr)}  ${dmy(n.fields.dato)}  ${(n.faerdigBy || n.createdBy || '').padEnd(w)}${fmt(parseNum(n.fields.tid)).padStart(5)} t  ${n.fields.kunde} · ${n.fields.model}${n.status === 'tastet' ? '  (tastet)' : ''}`));
+      const body = L.join('\r\n');
+      if (sent[ym] === body) continue;
+      await Dbx.upload(P.hours(ym), '\ufeff' + body + `\r\n\r\nOpdateret ${dkt(nowIso())}\r\n`, { '.tag':'overwrite' });
+      sent[ym] = body; LS.set('hoursSent', sent);
+    }
   },
   async pull(){
     let cursor = LS.get('cursor'), entries = [], res;
